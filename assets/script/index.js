@@ -11,16 +11,24 @@ const modalContent = select('.modal-content');
 const cookieModal = select('.modal');
 
 
-const life =10;
+const life = 15;
 
-// 
-function displayModal() {
-    // Check if cookies are enabled and the acceptance cookie is not set
-    if (areCookiesEnabled() && getCookie('cookieAccepted') === null) {
-        modal.style.display = 'block';
-    }
+// Check if cookies are enabled
+function areCookiesEnabled() {
+    return navigator.cookieEnabled;
 }
 
+// Function to display modal after a delay
+function displayModal() {
+    if (areCookiesEnabled() && document.cookie.length === 0) {
+        setTimeout(() => {
+            modal.style.display = 'block';
+        }, 2000); 
+    } else {
+        // Cookies are accepted, hide the modal
+        modal.style.display = 'none';
+    }
+}
 
 // screen dimensions
 function getScreenDimensions() {
@@ -40,6 +48,7 @@ function getOS () {
 
 }
 
+
 function getSystemBrowser () {
     const browser = navigator.userAgent.toLowerCase();
 
@@ -56,6 +65,12 @@ function getSystemBrowser () {
     return 'Unknown';
 }
 
+const defaultSwitches = document.querySelectorAll('.settings input[type="checkbox"]');
+
+defaultSwitches.forEach(checkbox => {
+    checkbox.checked = true;
+});
+
 // function for getting cookies
 function getCookie(name) {
     let matches = document.cookie.match(new RegExp(
@@ -69,16 +84,38 @@ function setCookie(name, value, life) {
     document.cookie = `${name}=${value}; path=/; max-age=${life}; SameSite=Lax`;
 }
 
-function areCookiesEnabled() {
-    return navigator.cookieEnabled;
-}
-
 // getting system information 
 function getSystemDetails() {
     let os = getOS();
     let browser = getSystemBrowser();
     let screenWidth = window.innerWidth;
     let screenHeight = window.innerHeight;
+}
+
+// Event listener for the "Save preferences" button
+select('.save').addEventListener('click', savePreferences);
+
+// function to save user preferences
+function savePreferences() {
+    // Get the state of the switches
+    const browserSwitch = select('#browserSwitch');
+    const osSwitch = select('#osSwitch');
+    const screenWidthSwitch = select('#screenWidthSwitch');
+    const screenHeightSwitch = select('#screenHeightSwitch');
+
+    setCookie('cookieAccepted', 'true', life);
+
+    // Set cookies based on user preferences
+    setCookie('Browser', browserSwitch.checked ? getSystemBrowser()  : 'Rejected', life);
+    setCookie('OS', osSwitch.checked ? getOS() : 'Rejected', life);
+    setCookie('ScreenWidth', screenWidthSwitch.checked ? window.innerWidth : 'Rejected', life);
+    setCookie('ScreenHeight', screenHeightSwitch.checked ? window.innerHeight : 'Rejected', life);
+
+    // console log the saved preferences
+    console.log('User preferences saved!');
+    cookieInfo();
+
+    modal.style.display = 'none';
 }
 
 // function when all cookie are accepted
@@ -99,30 +136,38 @@ function allCookiesAccepted() {
     console.log('All cookies are accepted!');    
 
     // Log the values of the cookies
+    cookieInfo();
+
+    modal.style.display = 'none';
+
+}
+
+function cookieInfo() {
     console.log('OS:', getCookie('OS'));
     console.log('Browser:', getCookie('Browser'));
     console.log('Width:', getCookie('ScreenWidth'));
     console.log('Height:', getCookie('ScreenHeight'));
-
 }
 
-
-// Add click event listener to the Settings button
-settingsBtn.addEventListener('click', function() {
-    modal.innerHTML = ''; 
-    modal.appendChild(settingsDiv);
-    settingsDiv.style.display = 'block';
-});
-
+function printCookies() {
+    if (document.cookie.length === 0 ) {
+        console.log('No cookies available');
+    } else {
+        cookieInfo();
+    }
+}
 
 onEvent('load', window, () => {
     displayModal();
+    printCookies();
 });
 
-onEvent('load', window, displayModal);
-onEvent('click', acceptBtn, allCookiesAccepted);
 onEvent('click', settingsBtn, () => {
+    modal.innerHTML = ''; 
+    modal.appendChild(settingsDiv);
     settingsDiv.style.display = 'block';
-});
+})
+
+onEvent('click', acceptBtn, allCookiesAccepted);
 
 
